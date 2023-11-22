@@ -142,8 +142,8 @@ class SideNav {
   /**
    * Fetch current pin state from state manager and apply immediately.
    */
-  private applyPinState(): void {
-    if (this.state.get('pinned')) {
+  private applyPinState(inverse: boolean = false): void {
+    if (inverse ^ this.state.get('pinned')) {
       this.pin();
     } else {
       this.unpin();
@@ -289,7 +289,7 @@ class SideNav {
    */
   private onToggle(event: Event): void {
     event.preventDefault();
-    this.applyPinState();
+    this.applyPinState(true);
   }
 
   /**
