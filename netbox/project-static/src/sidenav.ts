@@ -272,12 +272,16 @@ class SideNav {
    * Close the (unpinned) sidenav when the window is resized.
    */
   private onResize(): void {
-    if (window.innerWidth > 1200) {
-      this.applyPinState();
-    } else {
-      this.bodyRemove('show', 'hide');
-      this.bodyAdd('hidden');
+    // Check if at least one mobile toggle button is visible (then display is not mobile)
+    for (const toggler of getElements<HTMLButtonElement>('.sidenav-toggle-mobile')) {
+      if (toggler.offsetParent !== null) {
+        this.applyPinState();
+        return;
+      }
     }
+    // Display is mobile, continue execution
+    this.bodyRemove('show', 'hide');
+    this.bodyAdd('hidden');
   }
 
   /**
