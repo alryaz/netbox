@@ -76,18 +76,8 @@ class SideNav {
       toggler.addEventListener('click', event => this.onMobileToggle(event));
     }
 
-    if (window.innerWidth > 1200) {
-      if (this.state.get('pinned')) {
-        this.pin();
-      } else {
-        this.unpin();
-      }
-    } else {
-      this.bodyRemove('hide');
-      this.bodyAdd('hidden');
-    }
-
     window.addEventListener('resize', () => this.onResize());
+    this.onResize();
     
     this.base.addEventListener('mouseenter', () => this.onEnter());
     this.base.addEventListener('mouseleave', () => this.onLeave());
@@ -144,6 +134,17 @@ class SideNav {
       collapse.classList.remove('show');
     }
     this.state.set('pinned', false);
+  }
+
+  /**
+   * Fetch current pin state from state manager and apply immediately.
+   */
+  private applyPinState(): void {
+    if (this.state.get('pinned')) {
+      this.pin();
+    } else {
+      this.unpin();
+    }
   }
 
   /**
@@ -271,8 +272,10 @@ class SideNav {
    * Close the (unpinned) sidenav when the window is resized.
    */
   private onResize(): void {
-    if (this.bodyHas('show') && !this.bodyHas('pinned')) {
-      this.bodyRemove('show');
+    if (window.innerWidth > 1200) {
+      this.applyPinState();
+    } else {
+      this.bodyRemove('show', 'hide');
       this.bodyAdd('hidden');
     }
   }
@@ -282,12 +285,7 @@ class SideNav {
    */
   private onToggle(event: Event): void {
     event.preventDefault();
-
-    if (this.state.get('pinned')) {
-      this.unpin();
-    } else {
-      this.pin();
-    }
+    this.applyPinState();
   }
 
   /**
