@@ -85,9 +85,7 @@ class SideNav {
         this.unpin();
       }
       window.addEventListener('resize', () => this.onResize());
-    }
-
-    if (window.innerWidth < 1200) {
+    } else {
       this.bodyRemove('hide');
       this.bodyAdd('hidden');
       window.addEventListener('resize', () => this.onResize());
