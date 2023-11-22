@@ -102,6 +102,9 @@ class SideNav {
   private show(): void {
     this.bodyAdd('show');
     this.bodyRemove('hidden', 'hide');
+    for (const link of this.getActiveLinks()) {
+      this.activateLink(link, 'expand');
+    }
   }
 
   /**
@@ -245,11 +248,7 @@ class SideNav {
    */
   private onEnter(): void {
     if (!this.bodyHas('pinned')) {
-      this.bodyRemove('hide', 'hidden');
-      this.bodyAdd('show');
-      for (const link of this.getActiveLinks()) {
-        this.activateLink(link, 'expand');
-      }
+      this.show();
     }
   }
 
