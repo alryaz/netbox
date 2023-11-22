@@ -111,43 +111,30 @@ class SideNav {
    * Hide the sidenav and collapse all active nav sections.
    */
   private hide(): void {
-    this.bodyAdd('hidden');
+    this.bodyAdd('hide');
     this.bodyRemove('pinned', 'show');
     for (const collapse of this.base.querySelectorAll('.collapse')) {
       collapse.classList.remove('show');
     }
+    this.bodyRemove('hide');
+    this.bodyAdd('hidden');
   }
 
   /**
    * Pin the sidenav.
    */
   private pin(): void {
-    this.bodyAdd('show', 'pinned');
-    this.bodyRemove('hidden');
     this.state.set('pinned', true);
+    this.bodyAdd('pinned');
+    this.show();
   }
 
   /**
    * Unpin the sidenav.
    */
   private unpin(): void {
-    this.bodyRemove('pinned', 'show');
-    this.bodyAdd('hidden');
-    for (const collapse of this.base.querySelectorAll('.collapse')) {
-      collapse.classList.remove('show');
-    }
     this.state.set('pinned', false);
-  }
-
-  /**
-   * Fetch current pin state from state manager and apply immediately.
-   */
-  private applyPinState(inverse: boolean = false): void {
-    if (inverse ^ this.state.get('pinned')) {
-      this.pin();
-    } else {
-      this.unpin();
-    }
+    this.hide();
   }
 
   /**
@@ -257,13 +244,7 @@ class SideNav {
    */
   private onLeave(): void {
     if (!this.bodyHas('pinned')) {
-      this.bodyRemove('show');
-      this.bodyAdd('hide');
-      for (const link of this.getActiveLinks()) {
-        this.activateLink(link, 'collapse');
-      }
-      this.bodyRemove('hide');
-      this.bodyAdd('hidden');
+      this.hide();
     }
   }
 
@@ -281,7 +262,11 @@ class SideNav {
       }
     }
     // All mobile buttons are hidden, apply pin state
-    this.applyPinState();
+    if (this.state.get('pinned')) {
+      this.pin();
+    } else {
+      this.unpin();
+    }
   }
 
   /**
@@ -289,7 +274,11 @@ class SideNav {
    */
   private onToggle(event: Event): void {
     event.preventDefault();
-    this.applyPinState(true);
+    if (this.state.get('pinned')) {
+      this.unpin();
+    } else {
+      this.pin();
+    }
   }
 
   /**
