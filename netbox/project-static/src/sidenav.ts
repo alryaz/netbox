@@ -18,6 +18,11 @@ class SideNav {
   private state: StateManager<NavState>;
 
   /**
+   * Current state of mobile display.
+   */
+  private currentMobileState: Nullable<boolean> = null;
+
+  /**
    * The currently active parent nav-link controlling a section.
    */
   private activeLink: Nullable<HTMLAnchorElement> = null;
@@ -36,7 +41,7 @@ class SideNav {
 
     this.init();
     this.initSectionLinks();
-    this.initLinks();
+    this.initActiveLinks();
   }
 
   /**
@@ -84,19 +89,6 @@ class SideNav {
   }
 
   /**
-   * If the sidenav is shown, expand active nav links. Otherwise, collapse them.
-   */
-  private initLinks(): void {
-    for (const link of this.getActiveLinks()) {
-      if (this.bodyHas('show')) {
-        this.activateLink(link, 'expand');
-      } else if (this.bodyHas('hidden')) {
-        this.activateLink(link, 'collapse');
-      }
-    }
-  }
-
-  /**
    * Show the sidenav.
    */
   private show(): void {
@@ -113,8 +105,10 @@ class SideNav {
   private hide(): void {
     this.bodyAdd('hide');
     this.bodyRemove('pinned', 'show');
-    for (const collapse of this.base.querySelectorAll('.collapse')) {
-      collapse.classList.remove('show');
+    for (const [link, collapse] of this.sections) {
+      link.classList.add('collapsed');
+      link.setAttribute('aria-expanded', 'false');
+      collapse.hide();
     }
     this.bodyRemove('hide');
     this.bodyAdd('hidden');
@@ -181,6 +175,12 @@ class SideNav {
       }
     }
   }
+  
+  private initActiveLinks(): void {
+    for (const link of this.getActiveLinks()) {
+      this.activateLink(link, this.bodyHas('show') ? 'expand' : 'collapse');
+    }
+  }
 
   /**
    * Starting from the bottom-most active link in the element tree, work backwards to determine the
@@ -234,7 +234,7 @@ class SideNav {
    * Show the sidenav and expand any active sections.
    */
   private onEnter(): void {
-    if (!this.bodyHas('pinned')) {
+    if (!(this.currentMobileState || this.bodyHas('pinned'))) {
       this.show();
     }
   }
@@ -243,7 +243,7 @@ class SideNav {
    * Hide the sidenav and collapse any active sections.
    */
   private onLeave(): void {
-    if (!this.bodyHas('pinned')) {
+    if (!(this.currentMobileState || this.bodyHas('pinned'))) {
       this.hide();
     }
   }
@@ -252,20 +252,22 @@ class SideNav {
    * Close the (unpinned) sidenav when the window is resized.
    */
   private onResize(): void {
-    // Check if at least one mobile toggle button is visible
     for (const toggler of getElements<HTMLButtonElement>('.sidenav-toggle-mobile')) {
       if (toggler.offsetParent !== null) {
-        // Display is mobile, continue execution
-        this.bodyRemove('show', 'hide', 'pinned');
-        this.bodyAdd('hidden');
+        if (this.currentMobileState === null || this.currentMobileState === false) {
+          this.hide();
+          this.currentMobileState = true;
+        }
         return;
       }
     }
-    // All mobile buttons are hidden, apply pin state
-    if (this.state.get('pinned')) {
-      this.pin();
-    } else {
-      this.unpin();
+    if (this.currentMobileState === null || this.currentMobileState === true) {
+      if (this.state.get('pinned')) {
+        this.pin();
+      } else {
+        this.unpin();
+      }
+      this.currentMobileState = false;
     }
   }
 
@@ -287,10 +289,10 @@ class SideNav {
    */
   private onMobileToggle(event: Event): void {
     event.preventDefault();
-    if (this.bodyHas('hidden')) {
-      this.show();
-    } else {
+    if (this.bodyHas('show')) {
       this.hide();
+    } else {
+      this.show();
     }
   }
 }
