@@ -4,6 +4,7 @@ import { getElements, isElement } from './util';
 
 type NavState = { pinned: boolean };
 type BodyAttr = 'show' | 'hide' | 'hidden' | 'pinned';
+type Section = [HTMLAnchorElement, InstanceType<typeof Collapse>];
 
 class SideNav {
   /**
@@ -29,7 +30,7 @@ class SideNav {
   /**
    * All collapsible sections and their controlling nav-links.
    */
-  private sections: Map<HTMLAnchorElement, InstanceType<typeof Collapse>> = new Map();
+  private sections: Section[] = [];
 
   constructor(base: HTMLDivElement) {
     this.base = base;
@@ -94,7 +95,7 @@ class SideNav {
     this.bodyAdd('show');
     this.bodyRemove('hidden', 'hide');
     for (const link of this.getActiveLinks()) {
-      this.activateLink(link, 'expand');
+      this.activateLink(link, 'expand', true);
     }
   }
 
@@ -168,7 +169,7 @@ class SideNav {
           const collapseInstance = new Collapse(collapse, {
             toggle: false, // Don't automatically open the collapse element on invocation.
           });
-          this.sections.set(section, collapseInstance);
+          this.sections.push([section, collapseInstance]);
           section.addEventListener('click', event => this.handleSectionClick(event));
         }
       }
@@ -177,7 +178,7 @@ class SideNav {
   
   private initActiveLinks(): void {
     for (const link of this.getActiveLinks()) {
-      this.activateLink(link, this.bodyHas('show') ? 'expand' : 'collapse');
+      this.activateLink(link, this.bodyHas('show') ? 'expand' : 'collapse', true);
     }
   }
 
@@ -190,7 +191,8 @@ class SideNav {
    * @param link Active nav link
    * @param action Expand or Collapse
    */
-  private activateLink(link: HTMLAnchorElement, action: 'expand' | 'collapse'): void {
+  private activateLink(link: HTMLAnchorElement, action: 'expand' | 'collapse', fast: boolean = true): void {
+    // Search for the topmost .nav-item
     let navItem: Nullable<HTMLElement> =  link,
         nextItem: Nullable<HTMLDivElement> = null;
     while ((nextItem = navItem.parentElement.closest('.nav-item')) !== null) {
@@ -199,26 +201,32 @@ class SideNav {
 
     // Find the closest `.nav-link`, which should be adjacent to the `.collapse` element.
     const groupLink = navItem.querySelector(':scope > .nav-link');
-    if (isElement(groupLink)) {
-      // Find the closest collapsible element, which should contain `link`.
-      const collapse = this.sections.get(groupLink);
-      if (collapse instanceof Collapse) {
-        groupLink.classList.add('active');
-        switch (action) {
-          case 'expand':
-            groupLink.setAttribute('aria-expanded', 'true');
-            collapse.show();
-            link.classList.add('active');
-            groupLink.classList.remove('collapsed');
-            break;
-          case 'collapse':
-            groupLink.setAttribute('aria-expanded', 'false');
-            collapse.hide();
-            link.classList.remove('active');
-            groupLink.classList.add('collapsed');
-            break;
-        }
-      }
+    if (!isElement(groupLink)) return;
+
+    // Find the closest collapsible element, which should contain `link`.
+    const collapsibleElement = groupLink.nextElementSibling;
+    if (!isElement(collapsibleElement)) return;
+    
+    // Extract bootstrap collapse instance
+    if (!fast) {
+      const bootstrapCollapse = Collapse.getInstance(collapsibleElement) as Nullable<Collapse>;
+      if (bootstrapCollapse == null) return;
+    }
+
+    groupLink.classList.add('active');
+    switch (action) {
+      case 'expand':
+        groupLink.setAttribute('aria-expanded', 'true');
+        fast ? collapsibleElement.classList.add('show') : bootstrapCollapse.show();
+        link.classList.add('active');
+        groupLink.classList.remove('collapsed');
+        break;
+      case 'collapse':
+        groupLink.setAttribute('aria-expanded', 'false');
+        fast ? collapsibleElement.classList.remove('show') : bootstrapCollapse.hide()
+        link.classList.remove('active');
+        groupLink.classList.add('collapsed');
+        break;
     }
   }
 
