@@ -4,7 +4,6 @@ import { getElements, isElement } from './util';
 
 type NavState = { pinned: boolean };
 type BodyAttr = 'show' | 'hide' | 'hidden' | 'pinned';
-type Section = [HTMLAnchorElement, InstanceType<typeof Collapse>];
 
 class SideNav {
   /**
@@ -30,7 +29,7 @@ class SideNav {
   /**
    * All collapsible sections and their controlling nav-links.
    */
-  private sections: Section[] = [];
+  private sections: Map<HTMLAnchorElement, InstanceType<typeof Collapse>> = new Map();
 
   constructor(base: HTMLDivElement) {
     this.base = base;
@@ -169,7 +168,7 @@ class SideNav {
           const collapseInstance = new Collapse(collapse, {
             toggle: false, // Don't automatically open the collapse element on invocation.
           });
-          this.sections.push([section, collapseInstance]);
+          this.sections.set(section, collapseInstance);
           section.addEventListener('click', event => this.handleSectionClick(event));
         }
       }
@@ -192,23 +191,29 @@ class SideNav {
    * @param action Expand or Collapse
    */
   private activateLink(link: HTMLAnchorElement, action: 'expand' | 'collapse'): void {
-    // Find the closest .collapse element, which should contain `link`.
-    const collapse = link.closest('.collapse') as Nullable<HTMLDivElement>;
-    if (isElement(collapse)) {
-      // Find the closest `.nav-link`, which should be adjacent to the `.collapse` element.
-      const groupLink = collapse.parentElement?.querySelector('.nav-link');
-      if (isElement(groupLink)) {
+    let navItem: Nullable<HTMLElement> =  link,
+        nextItem: Nullable<HTMLDivElement> = null;
+    while ((nextItem = navItem.parentElement.closest('.nav-item')) !== null) {
+      navItem = nextItem;
+    }
+
+    // Find the closest `.nav-link`, which should be adjacent to the `.collapse` element.
+    const groupLink = navItem.querySelector(':scope > .nav-link');
+    if (isElement(groupLink)) {
+      // Find the closest collapsible element, which should contain `link`.
+      const collapse = this.sections.get(groupLink);
+      if (collapse instanceof Collapse) {
         groupLink.classList.add('active');
         switch (action) {
           case 'expand':
             groupLink.setAttribute('aria-expanded', 'true');
-            collapse.classList.add('show');
+            collapse.show();
             link.classList.add('active');
             groupLink.classList.remove('collapsed');
             break;
           case 'collapse':
             groupLink.setAttribute('aria-expanded', 'false');
-            collapse.classList.remove('show');
+            collapse.hide();
             link.classList.remove('active');
             groupLink.classList.add('collapsed');
             break;
