@@ -204,11 +204,13 @@ class SideNav {
             groupLink.setAttribute('aria-expanded', 'true');
             collapse.classList.add('show');
             link.classList.add('active');
+            groupLink.classList.remove('collapsed');
             break;
           case 'collapse':
             groupLink.setAttribute('aria-expanded', 'false');
             collapse.classList.remove('show');
             link.classList.remove('active');
+            groupLink.classList.add('collapsed');
             break;
         }
       }
