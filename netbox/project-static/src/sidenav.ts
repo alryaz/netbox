@@ -94,8 +94,13 @@ class SideNav {
   private show(): void {
     this.bodyAdd('show');
     this.bodyRemove('hidden', 'hide');
-    for (const link of this.getActiveLinks()) {
-      this.activateLink(link, 'expand', true);
+
+    // do not activate expansion on mobile
+    if (!this.currentMobileState) {
+      console.log('mobile');
+      for (const link of this.getActiveLinks()) {
+        this.activateLink(link, 'expand', true);
+      }
     }
   }
 
@@ -178,7 +183,8 @@ class SideNav {
   
   private initActiveLinks(): void {
     for (const link of this.getActiveLinks()) {
-      this.activateLink(link, this.bodyHas('show') ? 'expand' : 'collapse', true);
+      // do not activate expansion on mobile
+      this.activateLink(link, this.bodyHas('show') && !this.currentMobileState ? 'expand' : 'collapse', true);
     }
   }
 
@@ -214,17 +220,16 @@ class SideNav {
     }
 
     groupLink.classList.add('active');
+    link.classList.add('active');
     switch (action) {
       case 'expand':
         groupLink.setAttribute('aria-expanded', 'true');
         fast ? collapsibleElement.classList.add('show') : bootstrapCollapse.show();
-        link.classList.add('active');
         groupLink.classList.remove('collapsed');
         break;
       case 'collapse':
         groupLink.setAttribute('aria-expanded', 'false');
         fast ? collapsibleElement.classList.remove('show') : bootstrapCollapse.hide()
-        link.classList.remove('active');
         groupLink.classList.add('collapsed');
         break;
     }
